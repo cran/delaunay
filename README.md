@@ -5,6 +5,7 @@
 [![R-CMD-check-valgrind](https://github.com/stla/delaunay/actions/workflows/R-CMD-check-valgrind.yaml/badge.svg)](https://github.com/stla/delaunay/actions/workflows/R-CMD-check-valgrind.yaml)
 <!-- badges: end -->
 
+
 ## Elevated Delaunay triangulation
 
 *Bivariate Gaussian density:*
