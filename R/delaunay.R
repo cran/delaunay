@@ -96,37 +96,71 @@
 #' @return The Delaunay tessellation.
 #' \itemize{
 #'   \item \strong{If the dimension is 2} and \code{constraints=NULL},
-#'         the returned value is a list with three fields:
-#'         \code{faces}, \code{edges} and \code{area}. The \code{faces} field
-#'         contains an integer matrix with three columns; each row represents a
-#'         triangle whose each vertex is given by the index (row number) of
-#'         this point in the \code{points} matrix. The \code{edges} field
-#'         also contains an integer matrix with three columns. The two first
-#'         integers of a row are the indices of the two points which form the
-#'         edge. The third column, named \code{border}, only contains some
-#'         zeros and some ones; a border (exterior) edge is labelled by a
-#'         \code{1}. The \code{area} field contains only a number: the area
-#'         of the triangulated region (that is, the area of the convex hull of
-#'         the points).
+#'         the returned value is a list with four fields:
+#'         \code{faces}, \code{edges}, \code{area}, and \code{mesh}. 
+#'         The \code{faces} field is an integer matrix with three columns; 
+#'         each row represents a triangle whose each vertex is given by the 
+#'         index (row number) of this point in the \code{points} matrix. 
+#'         The \code{edges} field also is an integer matrix with three columns. 
+#'         The first two integers of a row are the indices of the two points 
+#'         which form the edge. The third column, named \code{border}, only 
+#'         contains some zeros and some ones; a border (exterior) edge is 
+#'         labelled by a \code{1}. The \code{area} field contains only a number: 
+#'         the area of the triangulated region (that is, the area of the convex 
+#'         hull of the points).
+#'         Finally, the \code{mesh} field is a list with three fields: 
+#'         \code{vertices}, \code{edges}, and \code{faces}.
+#'         \itemize{
+#'           \item The \code{vertices} field is the same numeric matrix as the 
+#'           \code{points} matrix.
+#'           \item The \code{edges} field is a dataframe with six columns. The 
+#'           first two columns provide the edges of the triangulation; they are 
+#'           given by row, the two integers of a row are the indices of the two 
+#'           points which form the edge. The third column provides the lengths 
+#'           of the edges. The fourth column, named \code{border}, is a column 
+#'           of Boolean values; an edge is labelled by \code{TRUE} in this 
+#'           column if it is a border edge, that is to say it has only one 
+#'           adjacent face (a face it belongs to). Finally, the fifth and sixth 
+#'           columns are integer columns providing the indices of the faces 
+#'           adjacent to the edge. If the edge is a border edge, \code{NA} is 
+#'           reported in the sixth column.
+#'           \item The \code{faces} field is a numeric matrix with three 
+#'           columns. In each row \code{i}, the first two columns provide the 
+#'           coordinates of the circumcenter of the face indexed by \code{i}. 
+#'           The third column provides the area of this face.  
+#'         }
 #'   \item \strong{If the dimension is 2} and \code{constraints} is not
 #'         \code{NULL}, the returned value is a list with
-#'         four fields: \code{faces}, \code{edges}, \code{constraints}, and
-#'         \code{area}. The \code{faces} field
-#'         contains an integer matrix with three columns; each row represents a
-#'         triangle whose each vertex is given by the index (row number) of
-#'         this point in the \code{points} matrix. The \code{edges} field
-#'         is a dataframe with four columns. The first two columns provide
-#'         the edges of the triangulation; they are given by row, the two
-#'         integers of a row are the indices of the two points which form the
-#'         edge. Each integer of the third column is the index of the face
-#'         the corresponding edge belongs to. The fourth column,
-#'         named \code{border}, only contains some
-#'         zeros and some ones; a border edge is labelled by a
-#'         \code{1}.
+#'         four fields: \code{faces}, \code{constraints}, \code{area}, and 
+#'         \code{mesh}. 
+#'         The \code{faces} field contains an integer matrix with three columns; 
+#'         each row represents a triangle whose each vertex is given by the 
+#'         index (row number) of this point in the \code{points} matrix. 
 #'         The \code{constraints} field is an integer matrix with
 #'         two columns, it represents the constraint edges.
-#'         Finally, the \code{area} field contains only a number: the area
+#'         The \code{area} field contains only a number: the area
 #'         of the triangulated region.
+#'         Finally, the \code{mesh} field is a list with three fields: 
+#'         \code{vertices}, \code{edges}, and \code{faces}.
+#'         \itemize{
+#'           \item The \code{vertices} field is the same numeric matrix as the 
+#'           \code{points} matrix.
+#'           \item The \code{edges} field is a dataframe with six columns. The 
+#'           first two columns provide the edges of the triangulation; they are 
+#'           given by row, the two integers of a row are the indices of the two 
+#'           points which form the edge. The third column provides the lengths 
+#'           of the edges. The fourth column, named \code{border}, is a column 
+#'           of Boolean values; an edge is labelled by \code{TRUE} in this 
+#'           column if it is a border edge, that is to say it has only one 
+#'           adjacent face (a face it belongs to). Finally, the fifth and sixth 
+#'           columns are integer columns providing the indices of the faces 
+#'           adjacent to the edge. If the edge is a border edge, \code{NA} is 
+#'           reported in the sixth column.
+#'           \item The \code{faces} field is a numeric matrix with three 
+#'           columns. In each row \code{i}, the first two columns provide the 
+#'           coordinates of the circumcenter of the face indexed by \code{i}. 
+#'           The third column provides the area of this face.  
+#'         }
 #'   \item \strong{If the dimension is 3}, the returned value is a list with
 #'         four fields: \code{cells}, \code{facets}, \code{edges}, and
 #'         \code{volume}. The \code{cells} field represents the tetrahedra
@@ -172,7 +206,7 @@
 #' }
 #' @export
 #' @importFrom rgl tmesh3d 
-#' @importFrom Rvcg vcgGetEdge vcgUpdateNormals
+#' @importFrom Rvcg vcgUpdateNormals
 #'
 #' @examples library(delaunay)
 #' # elevated Delaunay triangulation ####
@@ -245,39 +279,34 @@ delaunay <- function(
     cstr_col1 <- constraints[, 1L]
     cstr_col2 <- constraints[, 2L]
     constraints <- cbind(pmin(cstr_col1, cstr_col2), pmax(cstr_col1, cstr_col2))
-    if(anyDuplicated(constraints)){
+    if(anyDuplicated(constraints)) {
       stop("There are some duplicated constraints.", call. = TRUE)
     }
-    if(any(cstr_col1 == cstr_col2)){
+    if(any(cstr_col1 == cstr_col2)) {
       stop("There are some invalid constraints.", call. = TRUE)
     }
-    triangles <- del2DC_cpp(tpoints, t(constraints))
+    result <- del2DC_cpp(tpoints, t(constraints))
+    triangles <- t(result[["faces"]])
     # edges <- apply(triangles, 1L, function(x){
     #   rbind(c(x[1L], x[2L]), c(x[1L], x[3L]), c(x[2L], x[3L]))
     # }, simplify = FALSE)
     # edges <- do.call(rbind, edges)
     # edges <- edges[!duplicated(edges), ]
-    rglfake <- list(vb = rbind(tpoints, 1), it = triangles)
-    class(rglfake) <- "mesh3d"
     out <- list(
-      "faces"       = t(triangles),
-      "edges"       = `colnames<-`(as.matrix(
-        vcgGetEdge(rglfake))[, c(1L, 2L, 4L)], c("v1", "v2", "border")
-      ),
+      "faces"       = triangles,
       "constraints" = constraints,
-      "area"        = delaunayArea(points, t(triangles))
+      "area"        = delaunayArea(points, triangles),
+      "mesh"        = result[["mesh"]]
     )
     attr(out, "constrained") <- TRUE
     attr(out, "dimension") <- 2
-  }else if(dimension == 2L && is.null(constraints)){
-    out <- del2D_cpp(tpoints)
-    triangles <- out[["faces"]]
-    out[["faces"]] <- t(triangles)
-    out[["area"]] <- delaunayArea(points, out[["faces"]])
-    rglfake <- list(vb = rbind(tpoints, 1), it = triangles)
-    class(rglfake) <- "mesh3d"
-    out[["edges"]] <- `colnames<-`( # replace the cpp out$edges
-      as.matrix(vcgGetEdge(rglfake))[, -3L], c("v1", "v2", "border")
+  }else if(dimension == 2L && is.null(constraints)) {
+    result <- del2D_cpp(tpoints)
+    triangles <- result[["faces"]]
+    out <- list(
+      "faces" = triangles,
+      "area"  = delaunayArea(points, triangles),
+      "mesh"  = result[["mesh"]]
     )
     attr(out, "constrained") <- FALSE
     attr(out, "dimension") <- 2
@@ -378,9 +407,9 @@ print.delaunay <- function(x, ...){
 #' @param fillcolor controls the filling colors of the triangles, either
 #'   \code{NULL} for no color, a single color, \code{"random"} to get multiple
 #'   colors with \code{\link[randomcoloR]{randomColor}}, or \code{"distinct"}
-#'   get multiple colors with \code{\link[randomcoloR]{distinctColorPalette}}
-#' @param hue,luminosity if \code{color = "random"}, these arguments are passed
-#'   to \code{\link[randomcoloR]{randomColor}}
+#'   to get multiple colors with \code{\link[randomcoloR]{distinctColorPalette}}
+#' @param hue,luminosity if \code{fillcolor = "random"}, these arguments are 
+#'   passed to \code{\link[randomcoloR]{randomColor}}
 #' @param lty_edges,lwd_edges graphical parameters for the edges which are not
 #'   border edges nor constraint edges
 #' @param lty_borders,lwd_borders graphical parameters for the border edges
@@ -497,9 +526,9 @@ plotDelaunay2D <- function(
     }
   }
   constraintEdges <- triangulation[["constraints"]]
-  allEdges <- triangulation[["edges"]]
-  borderEdges <- allEdges[allEdges[, "border"] == 1L, c(1L, 2L)]
-  allEdges <- allEdges[, c(1L, 2L)]
+  allEdges <- triangulation[["mesh"]][["edges"]]
+  borderEdges <- as.matrix(allEdges[allEdges[, "border"], c("i1", "i2")])
+  allEdges <- as.matrix(allEdges[, c("i1", "i2")])
   specialEdges <- unionEdges(borderEdges, constraintEdges)
   constraintEdges <- subtractEdges(specialEdges, borderEdges)
   otherEdges <- subtractEdges(allEdges, specialEdges)
@@ -605,33 +634,35 @@ mesh2d <- function(triangulation){
       call. = TRUE
     )
   }
-  vertices <- attr(triangulation, "points")
-  if(ncol(vertices) != 2L){
+  dimension <- attr(triangulation, "dimension")
+  if(dimension != 2){
     stop(
-      sprintf("Invalid dimension (%d instead of 2).", ncol(vertices)),
+      sprintf("Invalid dimension (%s instead of 2).", dimension),
       call. = TRUE
     )
   }
+  Mesh <- triangulation[["mesh"]]
+  vertices <- Mesh[["vertices"]]
   vertices <- cbind(vertices, 0)
   mesh <- tmesh3d(
     vertices = t(vertices),
-    indices = t(triangulation[["faces"]])
+    indices  = t(triangulation[["faces"]])
   )
   constraintEdges <- triangulation[["constraints"]]
-  allEdges <- triangulation[["edges"]]
-  borderEdges <- allEdges[allEdges[, "border"] == 1L, c(1L, 2L)]
+  allEdges <- Mesh[["edges"]]
+  borderEdges <- as.matrix(allEdges[allEdges[, "border"], c("i1", "i2")])
   constraints <- NULL
   if(!is.null(constraintEdges)){
     specialEdges <- unionEdges(borderEdges, constraintEdges)
     constraintEdges <- subtractEdges(specialEdges, borderEdges)
     if(!is.null(constraintEdges)){
       constraints <- do.call(rbind, apply(
-        constraintEdges, 1L, function(ij) vertices[ij,], simplify = FALSE
+        constraintEdges, 1L, function(ij) vertices[ij, ], simplify = FALSE
       ))
     }
   }
   borders <- do.call(rbind, apply(
-    borderEdges, 1L, function(ij) vertices[ij,], simplify = FALSE
+    borderEdges, 1L, function(ij) vertices[ij, ], simplify = FALSE
   ))
   list(
     "mesh"            = mesh,
